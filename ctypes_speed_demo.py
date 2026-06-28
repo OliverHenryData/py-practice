@@ -24,7 +24,29 @@ def load_c_library() -> ctypes.CDLL:
     # tell ctypes what it returns
     lib.sum_squares_c.restype = ctypes.c_uint64
 
+    lib.square_once_c.argtypes = [ctypes.c_uint64]
+    lib.square_once_c.restype = ctypes.c_uint64
+
+
     return lib
+
+
+def sum_squares_calling_c_repeatedly(lib: ctypes.CDLL, n: int) -> int:
+    """
+    Bad pattern.
+
+    Python loops n times.
+    Each iteration crosses from Python into C.
+
+    This shows that calling C repeatedly from Python can lose much of the benefit.
+    """
+    total = 0
+
+    for i in range(n):
+        total += lib.square_once_c(i)
+
+    return total
+
 
 def time_function(label:str,func,*args):
 
@@ -56,6 +78,14 @@ def main() -> None:
 
     speedup = py_time / c_time
     print(f"  C was about {speedup:.1f}x faster.")
+
+    repeated_c_result, repeated_c_time = time_function(
+        "Python loop calling tiny C function repeatedly",
+        sum_squares_calling_c_repeatedly,
+        lib,
+        n,
+    )
+    
 
 
 if __name__ == "__main__":
